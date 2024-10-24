@@ -1,14 +1,16 @@
 {
   "name": "nexus",
   "description": "Nexus - ERC7579 Modular Smart Account",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0",
   "author": {
     "name": "Biconomy",
     "url": "https://github.com/bcnmy"
   },
   "dependencies": {
-    "@openzeppelin": "https://github.com/OpenZeppelin/openzeppelin-contracts/",
+    "@openzeppelin": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+    "@rhinestone/module-template": "https://github.com/erc7579/erc7739Validator",
     "dotenv": "^16.4.5",
+    "erc7739-validator-base": "https://github.com/erc7579/erc7739Validator",
     "solarray": "github:sablier-labs/solarray",
     "viem": "2.7.13"
   },
