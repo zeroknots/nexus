@@ -3,7 +3,7 @@
 rpcs = [
     # Mainnet
     #"https://eth.llamarpc.com",
-    "http://localhost:8545",
+    #"http://localhost:8545",
     #"https://1rpc.io/sepolia",
 
     # Optimism
@@ -54,4 +54,7 @@ proxy_admin = "0x0000000071727De22E5E9d8BAf0edAc6f37da032" #todo
 [deployments.singleton.nexus]
 file = "./artifacts/Nexus/Nexus.json"
 source_file_url = "./artifacts/Nexus/verify.json"
-salt = "0x000000000000000000000000000000000000000065637347ca23170220e8a777"
+salt = "0x000000000000000000000000000000000000000065637347ca23170220e8a778"
+args_sig = "(address)"
+args = ["0x0000000071727De22E5E9d8BAf0edAc6f37da032"]
+
