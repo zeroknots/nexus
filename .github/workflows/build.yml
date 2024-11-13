@@ -18,3 +18,73 @@ jobs:
     with:
       contract-name: ${{ matrix.contract-name }}
       store-artifacts: true
+
+      name: "Release Artifacts"
+on:
+  workflow_call:
+    inputs:
+      store-artifacts:
+        default: true
+        required: false
+        type: boolean
+      contract-name:
+        required: true
+        type: string
+        description: "Name of the contract file to build and verify"
+      cache-path:
+        default: |
+          cache
+          node_modules
+          out
+          out-optimized
+        required: false
+        type: "string"
+
+      restore-cache:
+        default: true
+        required: false
+        type: "boolean"
+jobs:
+  forge-build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v4"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1.2.0"
+
+      - name: "Restore the cached build and the node modules"
+        if: ${{ inputs.restore-cache }}
+        uses: "actions/cache/restore@v4"
+        with:
+          fail-on-cache-miss: true
+          key: "build-and-modules-${{ github.sha }}"
+          path: node_modules
+
+      - name: "Restore the cached build and the node modules"
+        if: ${{ inputs.restore-cache }}
+        uses: "actions/cache/restore@v4"
+        with:
+          fail-on-cache-miss: true
+          key: "build-and-modules-${{ github.sha }}"
+          path: out
+      - name: "Show the Forge config"
+        run: "forge config"
+      - name: "Build Artifacts"
+        run: |
+          chmod +x ./build-artifacts.sh
+          ./build-artifacts.sh ${{ inputs.contract-name }}
+      - name: "Upload artifacts"
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.contract-name }}
+          path: artifacts
+      - name: "Add summary"
+        run: |
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "🏗️Contract: ${{ inputs.contract-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "## Artifact Link" >> $GITHUB_STEP_SUMMARY
+          echo "Download artifacts: ${{ steps.upload-artifact.outputs.artifact-url }}" >> $GITHUB_STEP_SUMMARY
+
