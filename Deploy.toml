@@ -1,0 +1,57 @@
+
+[deployments]
+rpcs = [
+    # Mainnet
+    #"https://eth.llamarpc.com",
+    "http://localhost:8545",
+    #"https://1rpc.io/sepolia",
+
+    # Optimism
+    #"https://optimism.llamarpc.com",
+    #"https://sepolia.optimism.io",
+
+    # Base
+    #"https://base.llamarpc.com",
+    #"https://sepolia.base.org",
+
+    # Arbitrum
+    #"https://arbitrum.llamarpc.com",
+    #"https://public.stackup.sh/api/v1/node/arbitrum-sepolia",
+
+    # Polygon
+    #"https://polygon.llamarpc.com",
+    #"https://polygon-amoy.drpc.org",
+    #"https://rpc-amoy.polygon.technology",
+
+    # Gnosis
+    #"https://gnosis-pokt.nodies.app",
+    #"https://rpc.chiadochain.net",
+
+    # Mantle
+    #"https://rpc.mantle.xyz",
+
+    # Avalanche
+    #"https://1rpc.io/avax/c",
+    #"https://rpc.ankr.com/avalanche_fuji",
+
+    # Celo
+    #"https://celo.drpc.org",
+    #"https://alfajores-forno.celo-testnet.org",
+
+    # Fuse
+    #"https://fuse-pokt.nodies.app",
+    #"https://rpc.fusespark.io",
+
+    # Scroll
+    #"https://scroll-sepolia.drpc.org",
+]
+
+
+[deployments.dependencies]
+entrypoint = "0x0000000071727De22E5E9d8BAf0edAc6f37da032"
+proxy_admin = "0x0000000071727De22E5E9d8BAf0edAc6f37da032" #todo
+
+[deployments.singleton.nexus]
+file = "./artifacts/Nexus/Nexus.json"
+source_file_url = "./artifacts/Nexus/verify.json"
+salt = "0x000000000000000000000000000000000000000065637347ca23170220e8a777"
