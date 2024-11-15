@@ -1,50 +1,9 @@
 
 [deployments]
 rpcs = [
-    # Mainnet
-    #"https://eth.llamarpc.com",
-    #"http://localhost:8545",
-    #"https://1rpc.io/sepolia",
 
+#"http://localhost:8545",
 
-    # Optimism
-    #"https://optimism.llamarpc.com",
-    #"https://sepolia.optimism.io",
-
-    # Base
-    #"https://base.llamarpc.com",
-    #"https://sepolia.base.org",
-
-    # Arbitrum
-    #"https://arbitrum.llamarpc.com",
-    #"https://public.stackup.sh/api/v1/node/arbitrum-sepolia",
-
-    # Polygon
-    #"https://polygon.llamarpc.com",
-    #"https://polygon-amoy.drpc.org",
-    #"https://rpc-amoy.polygon.technology",
-
-    # Gnosis
-    #"https://gnosis-pokt.nodies.app",
-    #"https://rpc.chiadochain.net",
-
-    # Mantle
-    #"https://rpc.mantle.xyz",
-
-    # Avalanche
-    #"https://1rpc.io/avax/c",
-    #"https://rpc.ankr.com/avalanche_fuji",
-
-    # Celo
-    #"https://celo.drpc.org",
-    #"https://alfajores-forno.celo-testnet.org",
-
-    # Fuse
-    #"https://fuse-pokt.nodies.app",
-    #"https://rpc.fusespark.io",
-
-    # Scroll
-    #"https://scroll-sepolia.drpc.org",
 ]
 
 
@@ -54,32 +13,31 @@ proxy_admin = "0x0000000071727De22E5E9d8BAf0edAc6f37da032" #todo
 
 [deployments.singleton.nexus]
 file = "./artifacts/Nexus/Nexus.json"
-source_file_url = "./artifacts/Nexus/verify.json"
+source_file = "./artifacts/Nexus/verify.json"
 salt = "0x00000000000000000000000000000000000000006c22c2c2bc572b01b3ff9c91"
 args_sig = "(address)"
 args = ["0x0000000071727De22E5E9d8BAf0edAc6f37da032"]
 
 
-#[deployments.module.k1validator]
-#file = "./artifacts/K1Validator/K1Validator.json"
-#source_file_url = "./artifacts/K1Validator/verify.json"
-#salt = "0x0000000000000000000000000000000000000000915f0b80d190430065114a56"
+[deployments.module.k1validator]
+file = "./artifacts/K1Validator/K1Validator.json"
+source_file_url = "./artifacts/K1Validator/verify.json"
+salt = "0x0000000000000000000000000000000000000000915f0b80d190430065114a56"
 
-#[deployments.singleton.bootstrap]
-#file = "./artifacts/NexusBootstrap/NexusBootstrap.json"
-#source_file_url = "./artifacts/NexusBootstrap/verify.json"
-#salt = "0x0000000000000000000000000000000000000000915f0b80d190430065114a56"
+[deployments.singleton.bootstrap]
+file = "./artifacts/NexusBootstrap/NexusBootstrap.json"
+source_file_url = "./artifacts/NexusBootstrap/verify.json"
+salt = "0x0000000000000000000000000000000000000000915f0b80d190430065114a56"
 
 
-#[deployments.singleton.k1validatorFactory]
-#file = "./artifacts/K1ValidatorFactory/K1ValidatorFactory.json"
-#source_file_url = "./artifacts/K1ValidatorFactory/verify.json"
-#salt = "0x0000000000000000000000000000000000000000dc511933e067b10016697695"
-#args_sig = "(address,address,address,address,address)"
-#args = ["0x0000000000781492f9942b873C29635420c31e7f", #nexus implementation
-#"0x129443cA2a9Dec2020808a2868b38dDA457eaCC7", # factory owner
-#"0x000000000EE7335c268e8225fcce3E913B8b30FE", # impl
-#"0x670f03F975409d8ad76Bd489f1F59D2f0441BE5a", # bootstrapper
-#"0x000000000069E2a187AEFFb852bF3cCdC95151B2"] # registry
-#]
+[deployments.singleton.k1validatorFactory]
+file = "./artifacts/K1ValidatorFactory/K1ValidatorFactory.json"
+source_file_url = "./artifacts/K1ValidatorFactory/verify.json"
+salt = "0x0000000000000000000000000000000000000000dc511933e067b10016697695"
+args_sig = "(address,address,address,address,address)"
+args = ["0x0000000000781492f9942b873C29635420c31e7f", #nexus implementation
+"0x129443cA2a9Dec2020808a2868b38dDA457eaCC7", # factory owner
+"0x000000000EE7335c268e8225fcce3E913B8b30FE", # impl
+"0x670f03F975409d8ad76Bd489f1F59D2f0441BE5a", # bootstrapper
+"0x000000000069E2a187AEFFb852bF3cCdC95151B2"] # registry
 
