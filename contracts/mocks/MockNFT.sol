@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract MockNFT is ERC721 {
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) { }
 
     // Mint a new NFT token to the specified address with the specified tokenId
     // Warning: This function is only for testing purposes and should not be used in production

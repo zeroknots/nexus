@@ -154,18 +154,14 @@ contract K1Validator is IValidator, ERC7739Validator {
      * @param sender The sender of the ERC-1271 call to the account
      * @param hash The hash of the message
      * @param signature The signature of the message
-     * 
+     *
      * @return sigValidationResult the result of the signature validation, which can be:
      *  - EIP1271_SUCCESS if the signature is valid
      *  - EIP1271_FAILED if the signature is invalid
      *  - 0x7739000X if this is the ERC-7739 support detection request.
      *  Where X is the version of the ERC-7739 support.
      */
-    function isValidSignatureWithSender(
-        address sender,
-        bytes32 hash,
-        bytes calldata signature
-    ) external view virtual override returns (bytes4) {
+    function isValidSignatureWithSender(address sender, bytes32 hash, bytes calldata signature) external view virtual override returns (bytes4) {
         return _erc1271IsValidSignatureWithSender(sender, hash, _erc1271UnwrapSignature(signature));
     }
 
@@ -232,9 +228,11 @@ contract K1Validator is IValidator, ERC7739Validator {
     // msg.sender = Smart Account
     // sender = 1271 og request sender
     function _erc1271CallerIsSafe(address sender) internal view virtual override returns (bool) {
-        return (sender == 0x000000000000D9ECebf3C23529de49815Dac1c4c || // MulticallerWithSigner
-            sender == msg.sender || // Smart Account. Assume smart account never sends non safe eip-712 struct
-            _safeSenders.contains(msg.sender, sender)); // check if sender is in _safeSenders for the Smart Account
+        return (
+            sender == 0x000000000000D9ECebf3C23529de49815Dac1c4c // MulticallerWithSigner
+                || sender == msg.sender // Smart Account. Assume smart account never sends non safe eip-712 struct
+                || _safeSenders.contains(msg.sender, sender)
+        ); // check if sender is in _safeSenders for the Smart Account
     }
 
     /// @notice Internal method that does the job of validating the signature via ECDSA (secp256k1)

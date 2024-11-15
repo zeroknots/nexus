@@ -30,8 +30,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
 
         uint256 prevTimeStamp = block.timestamp;
 
-
-
         // 2. Request to uninstall the hook
         bytes memory emergencyUninstallCalldata = abi.encodeWithSelector(Nexus.emergencyUninstallHook.selector, address(HOOK_MODULE), "");
 
@@ -67,8 +65,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
 
         uint256 prevTimeStamp = block.timestamp;
 
-
-
         // 2. Request to uninstall the hook
         bytes memory emergencyUninstallCalldata = abi.encodeWithSelector(Nexus.emergencyUninstallHook.selector, address(HOOK_MODULE), "");
 
@@ -83,7 +79,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
         emit EmergencyHookUninstallRequest(address(HOOK_MODULE), block.timestamp);
 
         ENTRYPOINT.handleOps(userOps, payable(BOB.addr));
-
 
         // 3. Try without waiting for time to pass
         PackedUserOperation[] memory newUserOps = new PackedUserOperation[](1);
@@ -123,8 +118,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
 
         uint256 prevTimeStamp = block.timestamp;
 
-
-
         // 2. Request to uninstall the hook
         bytes memory emergencyUninstallCalldata = abi.encodeWithSelector(Nexus.emergencyUninstallHook.selector, address(HOOK_MODULE), "");
 
@@ -139,7 +132,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
         emit EmergencyHookUninstallRequest(address(HOOK_MODULE), block.timestamp);
 
         ENTRYPOINT.handleOps(userOps, payable(BOB.addr));
-
 
         // 3. Wait for time to pass
         // not more than 3 days
@@ -175,8 +167,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
 
         uint256 prevTimeStamp = block.timestamp;
 
-
-
         // 2. Request to uninstall the hook
         bytes memory emergencyUninstallCalldata = abi.encodeWithSelector(Nexus.emergencyUninstallHook.selector, address(HOOK_MODULE), "");
 
@@ -191,7 +181,6 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
         emit EmergencyHookUninstallRequest(address(HOOK_MODULE), block.timestamp);
 
         ENTRYPOINT.handleOps(userOps, payable(BOB.addr));
-
 
         // 3. Wait for time to pass
         // more than 3 days
@@ -210,5 +199,4 @@ contract TestNexus_Hook_Emergency_Uninstall is TestModuleManagement_Base {
 
         assertTrue(BOB_ACCOUNT.isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), ""), "Hook module should still be installed");
     }
-
 }

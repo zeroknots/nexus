@@ -790,6 +790,10 @@
     forge-std "github:foundry-rs/forge-std"
     solady "github:vectorized/solady"
 
+"@rhinestone/depoy-sol@github:zeroknots/deploy-sol":
+  version "0.0.0"
+  resolved "https://codeload.github.com/zeroknots/deploy-sol/tar.gz/251282f2069da8240f789196d7be9f630306e2fb"
+
 "@rhinestone/erc4337-validation@0.0.1-alpha.2":
   version "0.0.1-alpha.2"
   resolved "https://registry.yarnpkg.com/@rhinestone/erc4337-validation/-/erc4337-validation-0.0.1-alpha.2.tgz#9278ca59972e12838e3a25230041cc21d1c8053f"

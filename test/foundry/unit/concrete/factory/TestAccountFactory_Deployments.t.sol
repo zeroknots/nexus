@@ -204,13 +204,9 @@ contract TestAccountFactory_Deployments is NexusTest_Base {
         assertEq(deployedAccountAddress, expectedAddress, "Deployed account address mismatch");
 
         // Verify that the validators and hook were installed
+        assertTrue(INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), "Validator should be installed");
         assertTrue(
-            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""),
-            "Validator should be installed"
-        );
-        assertTrue(
-            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), abi.encodePacked(user.addr)),
-            "Hook should be installed"
+            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), abi.encodePacked(user.addr)), "Hook should be installed"
         );
     }
 
@@ -231,9 +227,8 @@ contract TestAccountFactory_Deployments is NexusTest_Base {
         address payable expectedAddress = FACTORY.computeAccountAddress(_initData, salt);
 
         // Manually compute the expected address
-        address payable manualExpectedAddress = payable(
-            LibClone.predictDeterministicAddressERC1967(FACTORY.ACCOUNT_IMPLEMENTATION(), actualSalt, address(FACTORY))
-        );
+        address payable manualExpectedAddress =
+            payable(LibClone.predictDeterministicAddressERC1967(FACTORY.ACCOUNT_IMPLEMENTATION(), actualSalt, address(FACTORY)));
 
         // Validate that both addresses match
         assertEq(expectedAddress, manualExpectedAddress, "Manually computed address mismatch");

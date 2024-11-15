@@ -21,13 +21,8 @@ contract TestK1ValidatorFactory_Deployments is NexusTest_Base {
         vm.deal(user.addr, 1 ether);
         initData = abi.encodePacked(user.addr);
         bootstrapper = new NexusBootstrap();
-        validatorFactory = new K1ValidatorFactory(
-            address(ACCOUNT_IMPLEMENTATION),
-            address(FACTORY_OWNER.addr),
-            address(VALIDATOR_MODULE),
-            bootstrapper,
-            REGISTRY
-        );
+        validatorFactory =
+            new K1ValidatorFactory(address(ACCOUNT_IMPLEMENTATION), address(FACTORY_OWNER.addr), address(VALIDATOR_MODULE), bootstrapper, REGISTRY);
     }
 
     /// @notice Tests if the constructor correctly initializes the factory with the given implementation, K1 Validator, and Bootstrapper addresses.
@@ -129,11 +124,7 @@ contract TestK1ValidatorFactory_Deployments is NexusTest_Base {
         // Validate that the account was deployed correctly
         assertEq(deployedAccountAddress, expectedAddress, "Deployed account address mismatch");
 
-        assertEq(
-            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""),
-            true,
-            "Validator should be installed"
-        );
+        assertEq(INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), true, "Validator should be installed");
     }
 
     /// @notice Tests that computing the account address returns the expected address.
@@ -187,11 +178,8 @@ contract TestK1ValidatorFactory_Deployments is NexusTest_Base {
         // Compute the actual salt manually using keccak256
         bytes32 manualSalt = keccak256(abi.encodePacked(eoaOwner, index, attesters, threshold));
 
-        address expectedAddress = LibClone.predictDeterministicAddressERC1967(
-            address(validatorFactory.ACCOUNT_IMPLEMENTATION()),
-            manualSalt,
-            address(validatorFactory)
-        );
+        address expectedAddress =
+            LibClone.predictDeterministicAddressERC1967(address(validatorFactory.ACCOUNT_IMPLEMENTATION()), manualSalt, address(validatorFactory));
 
         address computedAddress = validatorFactory.computeAccountAddress(eoaOwner, index, attesters, threshold);
 
