@@ -3,8 +3,9 @@
 rpcs = [
     # Mainnet
     #"https://eth.llamarpc.com",
-    "http://localhost:8545",
+    #"http://localhost:8545",
     #"https://1rpc.io/sepolia",
+
 
     # Optimism
     #"https://optimism.llamarpc.com",
