@@ -38,9 +38,8 @@ contract TestGas_NexusAccountFactory is TestModuleManagement_Base {
     function test_Gas_DeployMultipleAccounts() public {
         for (uint256 i = 0; i < 5; i++) {
             uint256 initialGas = gasleft();
-            address payable newAccount = FACTORY.createAccount(
-                getInitData(address(VALIDATOR_MODULE), address(this)), keccak256(abi.encodePacked("deploy_multiple_accounts", i))
-            );
+            address payable newAccount =
+                FACTORY.createAccount(getInitData(address(VALIDATOR_MODULE), address(this)), keccak256(abi.encodePacked("deploy_multiple_accounts", i)));
             uint256 gasUsed = initialGas - gasleft();
             console.log("Gas used per deployment while deploying multiple accounts: ", gasUsed);
             assertTrue(isContract(newAccount), "New account should be a contract");
@@ -51,8 +50,7 @@ contract TestGas_NexusAccountFactory is TestModuleManagement_Base {
     /// @notice Tests gas usage for deploying an account and verifying module installation
     function test_Gas_DeployAccountAndVerifyModuleInstallation() public {
         uint256 initialGas = gasleft();
-        address payable newAccount =
-            FACTORY.createAccount(getInitData(address(VALIDATOR_MODULE), address(this)), keccak256("deploy_account_verify_module"));
+        address payable newAccount = FACTORY.createAccount(getInitData(address(VALIDATOR_MODULE), address(this)), keccak256("deploy_account_verify_module"));
         uint256 gasUsed = initialGas - gasleft();
         console.log("Gas used for deploying a new account and verifying module installation: ", gasUsed);
 
@@ -73,8 +71,6 @@ contract TestGas_NexusAccountFactory is TestModuleManagement_Base {
     function assertValidCreation(Nexus _account) internal {
         string memory expected = "biconomy.nexus.1.0.0";
         assertEq(_account.accountId(), expected, "AccountConfig should return the expected account ID.");
-        assertTrue(
-            _account.isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), "Account should have the validation module installed"
-        );
+        assertTrue(_account.isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), "Account should have the validation module installed");
     }
 }

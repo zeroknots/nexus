@@ -27,10 +27,8 @@ contract TestK1Validator is NexusTest_Base {
             address(mockSafe1271Caller) //safe sender
         );
         // Prepare the call data for installing the validator module
-        bytes memory callData1 =
-            abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_VALIDATOR, address(validator), k1ValidatorSetupData);
-        bytes memory callData2 =
-            abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_VALIDATOR, address(mockSafe1271Caller), "");            
+        bytes memory callData1 = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_VALIDATOR, address(validator), k1ValidatorSetupData);
+        bytes memory callData2 = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_VALIDATOR, address(mockSafe1271Caller), "");
 
         // Create an execution array with the installation call data
         Execution[] memory execution = new Execution[](2);
@@ -82,7 +80,8 @@ contract TestK1Validator is NexusTest_Base {
         if (prev == address(0)) prev = address(0x01);
 
         bytes memory k1OnUninstallData = bytes("");
-        bytes memory callData = abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_VALIDATOR, address(validator), abi.encode(prev, k1OnUninstallData));
+        bytes memory callData =
+            abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_VALIDATOR, address(validator), abi.encode(prev, k1OnUninstallData));
 
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
@@ -232,21 +231,35 @@ contract TestK1Validator is NexusTest_Base {
         assertEq(res, VALIDATION_SUCCESS, "Valid signature should be accepted");
     }
 
-    /// @notice Tests that a signature with an invalid 's' value is rejected
-    function test_ValidateUserOp_InvalidSValue() public {
-        bytes32 originalHash = keccak256(abi.encodePacked("invalid message"));
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(BOB.privateKey, originalHash);
+    /// @notice Tests signature malleability is prevented by nonce in the 4337 flow
+    function test_ValidateUserOp_Inverted_S_Value_Fails_because_of_nonce() public {
+        Counter counter = new Counter();
+        //build and sign a userOp
+        Execution[] memory execution = new Execution[](1);
+        execution[0] = Execution(address(counter), 0, abi.encodeWithSelector(Counter.incrementNumber.selector));
+        PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
+        ENTRYPOINT.handleOps(userOps, payable(BOB.addr));
 
-        // Ensure 's' is in the upper range (invalid)
-        if (uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
-            s = bytes32(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1); // Set an invalid 's' value
+        // parse the userOp.signature via assembly
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(userOps, 0x20))
+            s := mload(add(userOps, 0x40))
+            v := byte(0, mload(add(userOps, 0x60)))
         }
 
-        userOp.signature = abi.encodePacked(r, s, v);
+        // invert signature
+        bytes32 s1;
+        if (uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            s1 = bytes32(115_792_089_237_316_195_423_570_985_008_687_907_852_837_564_279_074_904_382_605_163_141_518_161_494_337 - uint256(s));
+        }
+        userOps[0].signature = abi.encodePacked(r, s1, v == 27 ? 28 : v);
 
-        uint256 res = validator.validateUserOp(userOp, originalHash);
-
-        assertEq(res, VALIDATION_FAILED, "Signature with invalid 's' value should be rejected");
+        bytes memory revertReason = abi.encodeWithSelector(FailedOp.selector, 0, "AA25 invalid account nonce");
+        vm.expectRevert(revertReason);
+        ENTRYPOINT.handleOps(userOps, payable(BOB.addr));
     }
 
     /// @notice Tests that a valid signature with a valid 's' value is accepted for isValidSignatureWithSender
@@ -272,47 +285,50 @@ contract TestK1Validator is NexusTest_Base {
     }
 
     /// @notice Tests that a signature with an invalid 's' value is rejected for isValidSignatureWithSender
-    function test_IsValidSignatureWithSender_InvalidSValue() public {
+    function test_IsValidSignatureWithSender_Inverted_S_Value_Fails() public {
+        // allow vanilla 1271 flow
+        vm.prank(address(BOB_ACCOUNT));
+        validator.addSafeSender(address(this));
+
         bytes32 originalHash = keccak256(abi.encodePacked("invalid message"));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(BOB.privateKey, originalHash);
+        bytes32 s1;
 
         // Ensure 's' is in the upper range (invalid)
         if (uint256(s) <= 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
-            s = bytes32(0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1); // Set an invalid 's' value
+            s1 = bytes32(115_792_089_237_316_195_423_570_985_008_687_907_852_837_564_279_074_904_382_605_163_141_518_161_494_337 - uint256(s));
         }
-
+        // assert original signature is valid
         bytes memory signedMessage = abi.encodePacked(r, s, v);
-        bytes memory completeSignature = abi.encodePacked(address(validator), signedMessage);
+        vm.prank(address(BOB_ACCOUNT));
+        bytes4 result = validator.isValidSignatureWithSender(address(this), originalHash, signedMessage);
+        assertEq(result, ERC1271_MAGICVALUE, "Valid signature should be accepted");
 
-        bytes4 result = BOB_ACCOUNT.isValidSignature(originalHash, completeSignature);
-
-        assertEq(result, ERC1271_INVALID, "Signature with invalid 's' value should be rejected");
+        // invert signature
+        signedMessage = abi.encodePacked(r, s1, v == 27 ? 28 : v);
+        vm.prank(address(BOB_ACCOUNT));
+        vm.expectRevert(bytes4(keccak256("InvalidSignature()")));
+        validator.isValidSignatureWithSender(address(this), originalHash, signedMessage);
     }
 
     function test_IsValidSignatureWithSender_SafeCaller_Success() public {
         assertEq(mockSafe1271Caller.balanceOf(address(BOB_ACCOUNT)), 0);
-       
-       // alternative way of setting mockSafe1271Caller as safe sender in k1 validator
-       // commented out as it was already set at setup
-       // validator.addSafeSender(address(mockSafe1271Caller));
+
+        // alternative way of setting mockSafe1271Caller as safe sender in k1 validator
+        // commented out as it was already set at setup
+        // validator.addSafeSender(address(mockSafe1271Caller));
 
         bytes32 mockUserOpHash = keccak256(abi.encodePacked("123"));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(BOB.privateKey, mockUserOpHash);
         bytes memory userOpSig = abi.encodePacked(r, s, v);
 
         bytes memory verifData = bytes("some data");
-        bytes32 secure1271Hash = keccak256(
-            abi.encode(
-                address(BOB_ACCOUNT),
-                block.chainid,
-                keccak256(verifData)
-            )
-        );
-        (v,r,s) = vm.sign(BOB.privateKey, secure1271Hash);
+        bytes32 secure1271Hash = keccak256(abi.encode(address(BOB_ACCOUNT), block.chainid, keccak256(verifData)));
+        (v, r, s) = vm.sign(BOB.privateKey, secure1271Hash);
 
         userOp.signature = abi.encode(
             verifData,
-            abi.encodePacked(address(validator), r,s,v), // erc1271sig
+            abi.encodePacked(address(validator), r, s, v), // erc1271sig
             userOpSig
         );
 
@@ -320,6 +336,38 @@ contract TestK1Validator is NexusTest_Base {
 
         assertEq(res, VALIDATION_SUCCESS, "Signature should be valid");
         assertEq(mockSafe1271Caller.balanceOf(address(BOB_ACCOUNT)), 1);
+    }
+
+    /// @notice Tests the addSafeSender function to add a safe sender to the safe senders list
+    function test_addSafeSender_Success() public {
+        prank(address(BOB_ACCOUNT));
+        validator.addSafeSender(address(mockSafe1271Caller));
+        assertTrue(validator.isSafeSender(address(mockSafe1271Caller), address(BOB_ACCOUNT)), "MockSafe1271Caller should be in the safe senders list");
+    }
+
+    /// @notice Tests the removeSafeSender function to remove a safe sender from the safe senders list
+    function test_removeSafeSender_Success() public {
+        prank(address(BOB_ACCOUNT));
+        validator.removeSafeSender(address(mockSafe1271Caller));
+        assertFalse(
+            validator.isSafeSender(address(mockSafe1271Caller), address(BOB_ACCOUNT)), "MockSafe1271Caller should be removed from the safe senders list"
+        );
+    }
+
+    /// @notice Tests the fillSafeSenders function to fill the safe senders list
+    function test_fillSafeSenders_Success() public {
+        prank(address(0x03));
+        validator.onInstall(abi.encodePacked(address(0xdecaf0), address(0x01), address(0x02)));
+        assertTrue(validator.isSafeSender(address(0x01), address(0x03)));
+        assertTrue(validator.isSafeSender(address(0x02), address(0x03)));
+    }
+
+    /// @notice Tests the isSafeSender function to check if a sender is in the safe senders list
+    function test_isSafeSender_Success() public {
+        assertFalse(validator.isSafeSender(address(0x01), address(0x03)));
+        prank(address(0x03));
+        validator.addSafeSender(address(0x01));
+        assertTrue(validator.isSafeSender(address(0x01), address(0x03)));
     }
 
     /// @notice Generates an ERC-1271 hash for personal sign

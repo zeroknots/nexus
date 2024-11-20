@@ -18,12 +18,21 @@ import { ExecLib } from "./lib/ExecLib.sol";
 import { INexus } from "./interfaces/INexus.sol";
 import { BaseAccount } from "./base/BaseAccount.sol";
 import { IERC7484 } from "./interfaces/IERC7484.sol";
-import { IERC7739 } from "./interfaces/IERC7739.sol";
 import { ModuleManager } from "./base/ModuleManager.sol";
 import { ExecutionHelper } from "./base/ExecutionHelper.sol";
 import { IValidator } from "./interfaces/modules/IValidator.sol";
-import { MODULE_TYPE_VALIDATOR, MODULE_TYPE_EXECUTOR, MODULE_TYPE_FALLBACK, MODULE_TYPE_HOOK, MODULE_TYPE_MULTI, SUPPORTS_NESTED_TYPED_DATA_SIGN } from "./types/Constants.sol";
-import { ModeLib, ExecutionMode, ExecType, CallType, CALLTYPE_BATCH, CALLTYPE_SINGLE, CALLTYPE_DELEGATECALL, EXECTYPE_DEFAULT, EXECTYPE_TRY } from "./lib/ModeLib.sol";
+import { MODULE_TYPE_VALIDATOR, MODULE_TYPE_EXECUTOR, MODULE_TYPE_FALLBACK, MODULE_TYPE_HOOK, MODULE_TYPE_MULTI, SUPPORTS_ERC7739 } from "./types/Constants.sol";
+import {
+    ModeLib,
+    ExecutionMode,
+    ExecType,
+    CallType,
+    CALLTYPE_BATCH,
+    CALLTYPE_SINGLE,
+    CALLTYPE_DELEGATECALL,
+    EXECTYPE_DEFAULT,
+    EXECTYPE_TRY
+} from "./lib/ModeLib.sol";
 import { NonceLib } from "./lib/NonceLib.sol";
 import { SentinelListLib, SENTINEL, ZERO_ADDRESS } from "sentinellist/SentinelList.sol";
 
@@ -39,6 +48,7 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     using ModeLib for ExecutionMode;
     using ExecLib for bytes;
     using NonceLib for uint256;
+    using SentinelListLib for SentinelListLib.SentinelList;
 
     /// @dev The timelock period for emergency hook uninstallation.
     uint256 internal constant _EMERGENCY_TIMELOCK = 1 days;
@@ -78,7 +88,13 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
         PackedUserOperation calldata op,
         bytes32 userOpHash,
         uint256 missingAccountFunds
-    ) external virtual payPrefund(missingAccountFunds) onlyEntryPoint returns (uint256 validationData) {
+    )
+        external
+        virtual
+        payPrefund(missingAccountFunds)
+        onlyEntryPoint
+        returns (uint256 validationData)
+    {
         address validator = op.nonce.getValidator();
         if (op.nonce.isModuleEnableMode()) {
             PackedUserOperation memory userOp = op;
@@ -117,7 +133,14 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     function executeFromExecutor(
         ExecutionMode mode,
         bytes calldata executionCalldata
-    ) external payable onlyExecutorModule withHook withRegistry(msg.sender, MODULE_TYPE_EXECUTOR) returns (bytes[] memory returnData) {
+    )
+        external
+        payable
+        onlyExecutorModule
+        withHook
+        withRegistry(msg.sender, MODULE_TYPE_EXECUTOR)
+        returns (bytes[] memory returnData)
+    {
         (CallType callType, ExecType execType) = mode.decodeBasic();
         // check if calltype is batch or single or delegate call
         if (callType == CALLTYPE_SINGLE) {
@@ -140,7 +163,9 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
         (bool success, bytes memory innerCallRet) = address(this).delegatecall(callData);
         if (success) {
             emit Executed(userOp, innerCallRet);
-        } else revert ExecutionFailed();
+        } else {
+            revert ExecutionFailed();
+        }
     }
 
     /// @notice Installs a new module to the smart account.
@@ -209,7 +234,7 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     function initializeAccount(bytes calldata initData) external payable virtual {
         _initModuleManager();
         (address bootstrap, bytes memory bootstrapCall) = abi.decode(initData, (address, bytes));
-        (bool success, ) = bootstrap.delegatecall(bootstrapCall);
+        (bool success,) = bootstrap.delegatecall(bootstrapCall);
 
         require(success, NexusInitializationFailed());
         require(_hasValidators(), NoValidatorInstalled());
@@ -226,6 +251,15 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
     /// bytes4(keccak256("isValidSignature(bytes32,bytes)") = 0x1626ba7e
     /// @dev Delegates the validation to a validator module specified within the signature data.
     function isValidSignature(bytes32 hash, bytes calldata signature) external view virtual override returns (bytes4) {
+        // Handle potential ERC7739 support detection request
+        if (signature.length == 0) {
+            // Forces the compiler to optimize for smaller bytecode size.
+            if (uint256(hash) == (~signature.length / 0xffff) * 0x7739) {
+                return checkERC7739Support(hash, signature);
+            }
+        }
+        // else proceed with normal signature verification
+
         // First 20 bytes of data will be validator address and rest of the bytes is complete signature.
         address validator = address(bytes20(signature[0:20]));
         require(_isValidatorInstalled(validator), ValidatorNotInstalled(validator));
@@ -269,9 +303,8 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
         (CallType callType, ExecType execType) = mode.decodeBasic();
 
         // Return true if both the call type and execution type are supported.
-        return
-            (callType == CALLTYPE_SINGLE || callType == CALLTYPE_BATCH || callType == CALLTYPE_DELEGATECALL) &&
-            (execType == EXECTYPE_DEFAULT || execType == EXECTYPE_TRY);
+        return (callType == CALLTYPE_SINGLE || callType == CALLTYPE_BATCH || callType == CALLTYPE_DELEGATECALL)
+            && (execType == EXECTYPE_DEFAULT || execType == EXECTYPE_TRY);
     }
 
     /// @notice Determines whether a module is installed on the smart account.
@@ -320,25 +353,36 @@ contract Nexus is INexus, BaseAccount, ExecutionHelper, ModuleManager, UUPSUpgra
         UUPSUpgradeable.upgradeToAndCall(newImplementation, data);
     }
 
-    /// @dev For automatic detection that the smart account supports the nested EIP-712 workflow
-    /// Offchain usage only
-    /// Iterates over all the validators
-    function supportsNestedTypedDataSign() public view virtual returns (bytes32) {
-        SentinelListLib.SentinelList storage validators = _getAccountStorage().validators;
-        address next = validators.entries[SENTINEL];
-        while (next != ZERO_ADDRESS && next != SENTINEL) {
-            try IERC7739(next).supportsNestedTypedDataSign() returns (bytes32 res) {
-                if (res == SUPPORTS_NESTED_TYPED_DATA_SIGN) return SUPPORTS_NESTED_TYPED_DATA_SIGN;
-            } catch {}
-            next = validators.entries[next];
+    /// @dev For automatic detection that the smart account supports the ERC7739 workflow
+    /// Iterates over all the validators but only if this is a detection request
+    /// ERC-7739 spec assumes that if the account doesn't support ERC-7739
+    /// it will try to handle the detection request as it was normal sig verification
+    /// request and will return 0xffffffff since it won't be able to verify the 0x signature
+    /// against 0x7739...7739 hash.
+    /// So this approach is consistent with the ERC-7739 spec.
+    /// If no validator supports ERC-7739, this function returns false
+    /// thus the account will proceed with normal signature verification
+    /// and return 0xffffffff as a result.
+    function checkERC7739Support(bytes32 hash, bytes calldata signature) public view virtual returns (bytes4) {
+        bytes4 result;
+        unchecked {
+            SentinelListLib.SentinelList storage validators = _getAccountStorage().validators;
+            address next = validators.entries[SENTINEL];
+            while (next != ZERO_ADDRESS && next != SENTINEL) {
+                bytes4 support = IValidator(next).isValidSignatureWithSender(msg.sender, hash, signature);
+                if (bytes2(support) == bytes2(SUPPORTS_ERC7739) && support > result) {
+                    result = support;
+                }
+                next = validators.getNext(next);
+            }
         }
-        return bytes4(0xffffffff);
+        return result == bytes4(0) ? bytes4(0xffffffff) : result;
     }
 
     /// @dev Ensures that only authorized callers can upgrade the smart contract implementation.
     /// This is part of the UUPS (Universal Upgradeable Proxy Standard) pattern.
     /// @param newImplementation The address of the new implementation to upgrade to.
-    function _authorizeUpgrade(address newImplementation) internal virtual override(UUPSUpgradeable) onlyEntryPointOrSelf {}
+    function _authorizeUpgrade(address newImplementation) internal virtual override(UUPSUpgradeable) onlyEntryPointOrSelf { }
 
     /// @dev EIP712 domain name and version.
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {

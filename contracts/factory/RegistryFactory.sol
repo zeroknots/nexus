@@ -113,15 +113,8 @@ contract RegistryFactory is Stakeable, INexusFactory {
         // Ensure that the initData is structured for the expected NexusBootstrap.initNexus or similar method.
         // This step is crucial for ensuring the proper initialization of the Nexus smart account.
         bytes memory innerData = BytesLib.slice(callData, 4, callData.length - 4);
-        (
-            BootstrapConfig[] memory validators,
-            BootstrapConfig[] memory executors,
-            BootstrapConfig memory hook,
-            BootstrapConfig[] memory fallbacks,
-            ,
-            ,
-
-        ) = abi.decode(innerData, (BootstrapConfig[], BootstrapConfig[], BootstrapConfig, BootstrapConfig[], address, address[], uint8));
+        (BootstrapConfig[] memory validators, BootstrapConfig[] memory executors, BootstrapConfig memory hook, BootstrapConfig[] memory fallbacks,,,) =
+            abi.decode(innerData, (BootstrapConfig[], BootstrapConfig[], BootstrapConfig, BootstrapConfig[], address, address[], uint8));
 
         // Ensure that all specified modules are whitelisted and allowed for the account.
         for (uint256 i = 0; i < validators.length; i++) {

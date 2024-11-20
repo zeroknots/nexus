@@ -49,7 +49,7 @@ contract TestRegistryFactory_Deployments is NexusTest_Base {
         new RegistryFactory(address(0), address(this), registry, attestersArray, 1);
     }
 
-        /// @notice Tests that the constructor reverts if the threshold is greater than the length of the attesters array.
+    /// @notice Tests that the constructor reverts if the threshold is greater than the length of the attesters array.
     function test_Constructor_RevertIf_ThresholdExceedsAttestersLength() public {
         address implementation = address(0x123);
         address[] memory attestersArray = new address[](1);
@@ -65,12 +65,12 @@ contract TestRegistryFactory_Deployments is NexusTest_Base {
         address attester = address(0x456);
         address attester2 = address(0x654);
         vm.startPrank(FACTORY_OWNER.addr);
-        
+
         registryFactory.addAttester(attester);
         registryFactory.addAttester(attester2);
         assertTrue(registryFactory.attesters(0) == attester, "Attester should be added");
         assertTrue(registryFactory.attesters(1) == attester2, "Attester should be added");
-        
+
         registryFactory.removeAttester(attester);
         assertFalse(registryFactory.attesters(0) == attester, "Attester should be removed");
         vm.stopPrank();
@@ -96,16 +96,8 @@ contract TestRegistryFactory_Deployments is NexusTest_Base {
         // Validate that the account was deployed correctly
         assertEq(deployedAccountAddress, expectedAddress, "Deployed account address mismatch");
 
-        assertEq(
-            Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""),
-            true,
-            "Validator should be installed"
-        );
-        assertEq(
-            Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_EXECUTOR, address(EXECUTOR_MODULE), ""),
-            true,
-            "Executor should be installed"
-        );
+        assertEq(Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), true, "Validator should be installed");
+        assertEq(Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_EXECUTOR, address(EXECUTOR_MODULE), ""), true, "Executor should be installed");
         assertEq(Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), ""), true, "Hook should be installed");
         assertEq(
             Nexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), abi.encode(GENERIC_FALLBACK_SELECTOR)),

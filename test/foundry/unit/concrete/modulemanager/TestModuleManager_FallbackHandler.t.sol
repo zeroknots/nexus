@@ -17,24 +17,14 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
         bytes memory customData = abi.encode(bytes5(abi.encodePacked(GENERIC_FALLBACK_SELECTOR, CALLTYPE_SINGLE)));
 
         // Install MockHandler as the fallback handler for BOB_ACCOUNT
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
 
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
 
-        callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_HOOK,
-            address(HOOK_MODULE),
-            ""
-        );
+        callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_HOOK, address(HOOK_MODULE), "");
 
         execution[1] = Execution(address(BOB_ACCOUNT), 0, callData);
-        
+
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
         ENTRYPOINT.handleOps(userOps, payable(address(BOB.addr)));
 
@@ -61,12 +51,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     /// @notice Tests that handleOps triggers the generic fallback handler.
     function test_HandleOpsTriggersGenericFallback(bool skip) public {
         // Prepare the operation that triggers the fallback handler
-        bytes memory dataToTriggerFallback = abi.encodeWithSelector(
-            MockHandler(address(0)).onGenericFallback.selector,
-            address(this),
-            123,
-            "Example data"
-        );
+        bytes memory dataToTriggerFallback = abi.encodeWithSelector(MockHandler(address(0)).onGenericFallback.selector, address(this), 123, "Example data");
         Execution[] memory executions = new Execution[](1);
         executions[0] = Execution(address(BOB_ACCOUNT), 0, dataToTriggerFallback);
 
@@ -89,20 +74,15 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
         emit PreCheckCalled();
         vm.expectEmit(address(HOOK_MODULE));
         emit PostCheckCalled();
-        // skip fallback emit check as per Matching Sequences section here => https://book.getfoundry.sh/cheatcodes/expect-emit 
-        test_HandleOpsTriggersGenericFallback({skip: true});
+        // skip fallback emit check as per Matching Sequences section here => https://book.getfoundry.sh/cheatcodes/expect-emit
+        test_HandleOpsTriggersGenericFallback({ skip: true });
     }
 
     /// @notice Tests installing a fallback handler.
     /// @param selector The function selector for the fallback handler.
     function test_InstallFallbackHandler(bytes4 selector) internal {
         bytes memory customData = abi.encode(selector);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -117,12 +97,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
         MockHandler otherHandler = new MockHandler();
 
         bytes memory customData = abi.encode(GENERIC_FALLBACK_SELECTOR);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(otherHandler),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_FALLBACK, address(otherHandler), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -142,23 +117,14 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
         MockHandler otherHandler = new MockHandler();
 
         bytes memory customData = abi.encode(UNUSED_SELECTOR);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.uninstallModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(otherHandler),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_FALLBACK, address(otherHandler), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
 
         // Expected UserOperationRevertReason event due to function selector not used
         bytes32 userOpHash = ENTRYPOINT.getUserOpHash(userOps[0]);
-        bytes memory expectedRevertReason = abi.encodeWithSignature(
-            "ModuleNotInstalled(uint256,address)",
-            MODULE_TYPE_FALLBACK,
-            address(otherHandler)
-        );
+        bytes memory expectedRevertReason = abi.encodeWithSignature("ModuleNotInstalled(uint256,address)", MODULE_TYPE_FALLBACK, address(otherHandler));
 
         vm.expectEmit(true, true, true, true);
         emit UserOperationRevertReason(userOpHash, address(BOB_ACCOUNT), userOps[0].nonce, expectedRevertReason);
@@ -169,23 +135,14 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     /// @notice Tests reversion when uninstalling a fallback handler with a function selector not used by this handler.
     function test_RevertIf_FunctionSelectorNotUsedByThisHandler() public {
         bytes memory customData = abi.encode(UNUSED_SELECTOR);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.uninstallModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
 
         // Expected UserOperationRevertReason event due to function selector not used by this handler
         bytes32 userOpHash = ENTRYPOINT.getUserOpHash(userOps[0]);
-        bytes memory expectedRevertReason = abi.encodeWithSignature(
-            "ModuleNotInstalled(uint256,address)",
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE)
-        );
+        bytes memory expectedRevertReason = abi.encodeWithSignature("ModuleNotInstalled(uint256,address)", MODULE_TYPE_FALLBACK, address(HANDLER_MODULE));
 
         vm.expectEmit(true, true, true, true);
         emit UserOperationRevertReason(userOpHash, address(BOB_ACCOUNT), userOps[0].nonce, expectedRevertReason);
@@ -197,12 +154,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     function test_UninstallFallbackHandler_Success() public {
         // Correctly uninstall the fallback handler
         bytes memory customData = abi.encode(GENERIC_FALLBACK_SELECTOR);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.uninstallModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -217,12 +169,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     function test_RevertIf_UninstallNonInstalledFallbackHandler() public {
         // Correctly uninstall the fallback handler
         bytes memory customData = abi.encode(UNUSED_SELECTOR);
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.uninstallModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.uninstallModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -246,12 +193,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     /// @notice Tests reversion when attempting to install the forbidden onInstall selector as a fallback handler.
     function test_RevertIf_InstallForbiddenOnInstallSelector() public {
         bytes memory customData = abi.encode(bytes5(abi.encodePacked(bytes4(0x6d61fe70), CALLTYPE_SINGLE))); // onInstall selector
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -269,12 +211,7 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     /// @notice Tests reversion when attempting to install the forbidden onUninstall selector as a fallback handler.
     function test_RevertIf_InstallForbiddenOnUninstallSelector() public {
         bytes memory customData = abi.encode(bytes5(abi.encodePacked(bytes4(0x8a91b0e3), CALLTYPE_SINGLE))); // onUninstall selector
-        bytes memory callData = abi.encodeWithSelector(
-            IModuleManager.installModule.selector,
-            MODULE_TYPE_FALLBACK,
-            address(HANDLER_MODULE),
-            customData
-        );
+        bytes memory callData = abi.encodeWithSelector(IModuleManager.installModule.selector, MODULE_TYPE_FALLBACK, address(HANDLER_MODULE), customData);
         Execution[] memory execution = new Execution[](1);
         execution[0] = Execution(address(BOB_ACCOUNT), 0, callData);
         PackedUserOperation[] memory userOps = buildPackedUserOperation(BOB, BOB_ACCOUNT, EXECTYPE_DEFAULT, execution, address(VALIDATOR_MODULE), 0);
@@ -292,17 +229,17 @@ contract TestModuleManager_FallbackHandler is TestModuleManagement_Base {
     function test_onTokenReceived_Success() public {
         vm.startPrank(address(ENTRYPOINT));
         //ERC-721
-        (bool success, bytes memory data) = address(BOB_ACCOUNT).call{value: 0}(hex'150b7a02');
+        (bool success, bytes memory data) = address(BOB_ACCOUNT).call{ value: 0 }(hex"150b7a02");
         assertTrue(success);
-        assertTrue(keccak256(data) == keccak256(bytes(hex'150b7a02')));
-        //ERC-1155 
-        (success, data) = address(BOB_ACCOUNT).call{value: 0}(hex'f23a6e61');
+        assertTrue(keccak256(data) == keccak256(bytes(hex"150b7a02")));
+        //ERC-1155
+        (success, data) = address(BOB_ACCOUNT).call{ value: 0 }(hex"f23a6e61");
         assertTrue(success);
-        assertTrue(keccak256(data) == keccak256(bytes(hex'f23a6e61')));
+        assertTrue(keccak256(data) == keccak256(bytes(hex"f23a6e61")));
         //ERC-1155 Batch
-        (success, data) = address(BOB_ACCOUNT).call{value: 0}(hex'bc197c81');
+        (success, data) = address(BOB_ACCOUNT).call{ value: 0 }(hex"bc197c81");
         assertTrue(success);
-        assertTrue(keccak256(data) == keccak256(bytes(hex'bc197c81')));
+        assertTrue(keccak256(data) == keccak256(bytes(hex"bc197c81")));
 
         vm.stopPrank();
     }

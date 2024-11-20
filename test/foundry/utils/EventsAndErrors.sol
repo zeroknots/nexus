@@ -47,7 +47,6 @@ contract EventsAndErrors {
     error NexusInitializationFailed();
     error InvalidThreshold(uint8 providedThreshold, uint256 attestersCount);
 
-
     // ==========================
     // Operation Errors
     // ==========================

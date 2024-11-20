@@ -30,7 +30,7 @@ contract MockHandler is IFallback {
         }
     }
 
-    function onUninstall(bytes calldata data) external override {}
+    function onUninstall(bytes calldata data) external override { }
 
     function isModuleType(uint256 moduleTypeId) external pure override returns (bool) {
         return moduleTypeId == MODULE_TYPE_FALLBACK;

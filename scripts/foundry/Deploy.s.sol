@@ -26,12 +26,6 @@ contract Deploy is BaseScript {
         k1Validator = new K1Validator();
         bootstrapper = new NexusBootstrap();
         registry = new MockRegistry();
-        k1ValidatorFactory = new K1ValidatorFactory(
-            address(smartAccount),
-            msg.sender,
-            address(k1Validator),
-            bootstrapper,
-            registry
-        );
+        k1ValidatorFactory = new K1ValidatorFactory(address(smartAccount), msg.sender, address(k1Validator), bootstrapper, registry);
     }
 }

@@ -240,13 +240,9 @@ contract TestNexusAccountFactory_Deployments is NexusTest_Base {
         assertEq(deployedAccountAddress, expectedAddress, "Deployed account address mismatch");
 
         // Verify that the validators and hook were installed
+        assertTrue(INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""), "Validator should be installed");
         assertTrue(
-            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_VALIDATOR, address(VALIDATOR_MODULE), ""),
-            "Validator should be installed"
-        );
-        assertTrue(
-            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), abi.encodePacked(user.addr)),
-            "Hook should be installed"
+            INexus(deployedAccountAddress).isModuleInstalled(MODULE_TYPE_HOOK, address(HOOK_MODULE), abi.encodePacked(user.addr)), "Hook should be installed"
         );
     }
 }
